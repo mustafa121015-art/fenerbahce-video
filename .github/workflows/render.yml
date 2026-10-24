@@ -9,27 +9,48 @@ jobs:
   render:
     runs-on: ubuntu-latest
     steps:
-      - name: Kodu Çek
-        uses: actions/checkout@v4
-
-      - name: Node.js Kur
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Sistem Paketlerini (ffmpeg, chromium) Hazırla
+      - name: Gerekli Paketleri Kur
         run: |
           sudo apt-get update
-          sudo apt-get install -y ffmpeg chromium-browser
+          sudo apt-get install -y ffmpeg
 
-      - name: Bağımlılıkları Yükle
-        run: npm install
+      - name: Videolari Uret ve Montajla
+        run: |
+          mkdir -p public out
+          
+          # 1. Sahne: Sari-Lacivert Dinamik Giris (5 sn)
+          ffmpeg -y -f lavfi -i testsrc=duration=5:size=1920x1080:rate=30 \
+            -vf "drawbox=x=0:y=0:w=960:h=1080:color=0x001A3A@1:t=fill,drawbox=x=960:y=0:w=960:h=1080:color=0xFFED00@1:t=fill,drawbox=y=ih-200:color=0x000000@0.7:width=iw:height=200:t=fill,drawtext=text='1907 KADIKOY - BIR EFSANENIN DOGUSU':fontcolor=white:fontsize=48:x=(w-text_w)/2:y=h-130" \
+            -c:v libx264 -pix_fmt yuv420p -an public/part1.mp4
 
-      - name: Videoyu Otomatik Yap
-        run: node videoyu-yap.mjs
+          # 2. Sahne: Harington Kupasi & Direnis (5 sn)
+          ffmpeg -y -f lavfi -i smptebars=duration=5:size=1920x1080:rate=30 \
+            -vf "colorchannelmixer=.3:.4:.3:0:.3:.4:.3:0:.3:.4:.3,drawbox=y=ih-200:color=0x001A3A@0.8:width=iw:height=200:t=fill,drawtext=text='1923 - HARINGTON KUPASI VE SANLI TARIH':fontcolor=0xFFED00:fontsize=48:x=(w-text_w)/2:y=h-130" \
+            -c:v libx264 -pix_fmt yuv420p -an public/part2.mp4
 
-      - name: Bitmiş Videoyu Yükle
+          # 3. Sahne: Kadikoy Mabedi & Sukru Saracoglu (5 sn)
+          ffmpeg -y -f lavfi -i color=c=0x001A3A:duration=5:size=1920x1080:rate=30 \
+            -vf "drawbox=y=ih-200:color=0x000000@0.7:width=iw:height=200:t=fill,drawtext=text='KADIKOY MABEDI - SUKRU SARACOGLU':fontcolor=0xFFED00:fontsize=48:x=(w-text_w)/2:y=h-130" \
+            -c:v libx264 -pix_fmt yuv420p -an public/part3.mp4
+
+          # 4. Sahne: Sonsuz Ask Fenerbahce (5 sn)
+          ffmpeg -y -f lavfi -i color=c=0xFFED00:duration=5:size=1920x1080:rate=30 \
+            -vf "drawbox=y=ih-200:color=0x001A3A@0.9:width=iw:height=200:t=fill,drawtext=text='SONSUZA DEK FENERBAHCE!':fontcolor=white:fontsize=52:x=(w-text_w)/2:y=h-130" \
+            -c:v libx264 -pix_fmt yuv420p -an public/part4.mp4
+
+          # Ses Dosyasi (20 sn arka plan sesi)
+          ffmpeg -y -f lavfi -i sine=frequency=440:beep_factor=4:duration=20 -c:a aac -b:a 128k public/audio.aac
+
+          # Birlestirme Listesi
+          printf "file 'part1.mp4'\nfile 'part2.mp4'\nfile 'part3.mp4'\nfile 'part4.mp4'\n" > public/list.txt
+
+          # Nihai Render (20 Saniyelik Tam Montaj)
+          cd public
+          ffmpeg -y -f concat -safe 0 -i list.txt -i audio.aac -c:v copy -c:a copy -shortest ../out/fenerbahce_video_final.mp4
+
+      - name: Bitmis Videoyu Indirmeye Sun
         uses: actions/upload-artifact@v4
         with:
-          name: fenerbahce-video
-          path: out/*.mp4
+          name: fenerbahce-video-mp4
+          path: out/fenerbahce_video_final.mp4
+          if-no-files-found: error
