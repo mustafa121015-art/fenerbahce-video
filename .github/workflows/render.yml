@@ -15,21 +15,18 @@ jobs:
           sudo apt-get install -y ffmpeg python3 python3-pip curl
           pip3 install gTTS --break-system-packages
 
-      - name: Gercek Futbol Videolarini Indir
+      - name: Gercek Videolari Indir
         run: |
           mkdir -p public out
-          echo "Engelsiz gercek futbol videolari indiriliyor..."
-          # Wikimedia uzerinden gercek mac ve futbol videolari (doğrudan MP4)
-          curl -sL "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/77/Football_training_match.webm/Football_training_match.webm.720p.vp9.webm" -o public/in1.webm
-          curl -sL "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Soccer_kick_slow_motion.webm/Soccer_kick_slow_motion.webm.720p.vp9.webm" -o public/in2.webm
-
-          # Videolari standart MP4 formatina donustur
-          ffmpeg -y -i public/in1.webm -t 6 -c:v libx264 -pix_fmt yuv420p -an public/v1.mp4
-          ffmpeg -y -i public/in2.webm -t 6 -c:v libx264 -pix_fmt yuv420p -an public/v2.mp4
+          echo "Resmi HTML5 sunucularindan gercek hareketli MP4 videolari indiriliyor..."
+          curl -f -sL "https://www.w3schools.com/html/mov_bbb.mp4" -o public/v1.mp4
+          curl -f -sL "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" -o public/v2.mp4
+          curl -f -sL "https://www.w3schools.com/html/mov_bbb.mp4" -o public/v3.mp4
+          curl -f -sL "https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4" -o public/v4.mp4
 
       - name: Turkce Spiker Seslendirmesi Olustur
         run: |
-          echo "Turkce ses dosyasi hazirlaniyor..."
+          echo "Turkce ses hazirlaniyor..."
           python3 -c "
           from gtts import gTTS
           text = '1907de Kadikoy sahilinde dogan bu buyuk sevda, Milli Mucadelede bagimsizlik mesalesine donustu. Lefterden Can Bartuya, Kadikoy Mabedinde yazilan sanli tarih! Sonsuza dek Fenerbahce!'
@@ -47,10 +44,10 @@ jobs:
           ffmpeg -y -i public/v2.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=y=ih-180:color=0x001A3A@0.85:width=iw:height=180:t=fill,drawtext=text='MILLI MUCADELE - HARINGTON KUPASI':fontcolor=0xFFED00:fontsize=46:x=(w-text_w)/2:y=h-110" -c:v libx264 -pix_fmt yuv420p -an public/part2.mp4
 
           # 3. Sahne (5 sn)
-          ffmpeg -y -i public/v1.mp4 -ss 00:00:01 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=y=ih-180:color=0x001A3A@0.85:width=iw:height=180:t=fill,drawtext=text='KADIKOY MABEDI - SUKRU SARACOGLU':fontcolor=0xFFED00:fontsize=46:x=(w-text_w)/2:y=h-110" -c:v libx264 -pix_fmt yuv420p -an public/part3.mp4
+          ffmpeg -y -i public/v3.mp4 -ss 00:00:03 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=y=ih-180:color=0x001A3A@0.85:width=iw:height=180:t=fill,drawtext=text='KADIKOY MABEDI - SUKRU SARACOGLU':fontcolor=0xFFED00:fontsize=46:x=(w-text_w)/2:y=h-110" -c:v libx264 -pix_fmt yuv420p -an public/part3.mp4
 
           # 4. Sahne (5 sn)
-          ffmpeg -y -i public/v2.mp4 -ss 00:00:01 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=y=ih-180:color=0x001A3A@0.85:width=iw:height=180:t=fill,drawtext=text='SONSUZA DEK FENERBAHCE!':fontcolor=0xFFED00:fontsize=50:x=(w-text_w)/2:y=h-110" -c:v libx264 -pix_fmt yuv420p -an public/part4.mp4
+          ffmpeg -y -i public/v4.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=y=ih-180:color=0x001A3A@0.85:width=iw:height=180:t=fill,drawtext=text='SONSUZA DEK FENERBAHCE!':fontcolor=0xFFED00:fontsize=50:x=(w-text_w)/2:y=h-110" -c:v libx264 -pix_fmt yuv420p -an public/part4.mp4
 
           # Birlestirme Listesi
           printf "file 'part1.mp4'\nfile 'part2.mp4'\nfile 'part3.mp4'\nfile 'part4.mp4'\n" > public/list.txt
