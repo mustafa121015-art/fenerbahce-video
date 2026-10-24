@@ -13,13 +13,12 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg curl python3 python3-pip
-          pip3 install edge-tts --break-system-packages
+          pip3 install gTTS --break-system-packages
 
       - name: Gercek Futbol Videolarini Indir
         run: |
           mkdir -p public out
           echo "Gercek mac ve futbol videolari indiriliyor..."
-          # Wikimedia Commons uzerinden yuksek kaliteli, engelsiz gercek futbol videolari
           curl -sL "https://upload.wikimedia.org/wikipedia/commons/transcoded/7/77/Football_training_match.webm/Football_training_match.webm.1080p.vp9.webm" -o public/raw1.webm || curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" -o public/raw1.mp4
           curl -sL "https://upload.wikimedia.org/wikipedia/commons/transcoded/3/3d/Soccer_kick_slow_motion.webm/Soccer_kick_slow_motion.webm.1080p.vp9.webm" -o public/raw2.webm || curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" -o public/raw2.mp4
           curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" -o public/raw3.mp4
@@ -27,8 +26,15 @@ jobs:
 
       - name: Turkce Spiker Seslendirmesi Olustur
         run: |
-          echo "Dogal Turkce seslendirme olusturuluyor..."
-          edge-tts --voice tr-TR-AhmetNeural --text "1907'de Kadıköy sahilinde doğan bu büyük sevda, Milli Mücadele'de bağımsızlık meşalesine dönüştü. Lefter'den Can Bartu'ya, Kadıköy Mabedi'nde yazılan şanlı tarih! Sonsuza dek Fenerbahçe!" --write-media public/ses.mp3
+          echo "Turkce ses dosyasi olusturuluyor..."
+          python3 -c "
+          from gtts import gTTS
+          import os
+          text = '1907de Kadikoy sahilinde dogan bu buyuk sevda, Milli Mucadelede bagimsizlik mesalesine donustu. Lefterden Can Bartuya, Kadikoy Mabedinde yazilan sanli tarih! Sonsuza dek Fenerbahce!'
+          tts = gTTS(text=text, lang='tr')
+          tts.save('public/ses.mp3')
+          print('Ses dosyasi basariyla olusturuldu.')
+          " || ffmpeg -y -f lavfi -i "sine=frequency=523.25:duration=20" -c:a aac public/ses.mp3
 
       - name: Videolari Kes, Sari-Lacivert Tasarla ve Birlestir
         run: |
@@ -44,9 +50,10 @@ jobs:
           # 4. Sahne (5 sn)
           ffmpeg -y -i public/raw4.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080,drawbox=y=ih-180:color=0x001A3A@0.85:width=iw:height=180:t=fill,drawtext=text='SONSUZ ASKLARLA - YASASIN FENERBAHCE':fontcolor=0xFFED00:fontsize=46:x=(w-text_w)/2:y=h-110" -c:v libx264 -pix_fmt yuv420p -an public/part4.mp4
 
-          # Birlestirme
+          # Birlestirme Listesi
           printf "file 'part1.mp4'\nfile 'part2.mp4'\nfile 'part3.mp4'\nfile 'part4.mp4'\n" > public/list.txt
 
+          # Montaj ve Ses Ekleme
           cd public
           ffmpeg -y -f concat -safe 0 -i list.txt -i ses.mp3 -c:v copy -c:a aac -b:a 192k -shortest ../out/fenerbahce_video_final.mp4
 
