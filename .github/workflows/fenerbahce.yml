@@ -1,0 +1,49 @@
+name: Fenerbahce Kesin Render
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: FFmpeg Kur
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg curl
+
+      - name: Dosyalari Indir ve Birlestir
+        run: |
+          mkdir -p public out
+          echo "Videolar cekiliyor..."
+          curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4" -o public/v1.mp4
+          curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4" -o public/v2.mp4
+          curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4" -o public/v3.mp4
+          curl -sL "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyBlazes.mp4" -o public/v4.mp4
+
+          echo "Ses olusturuluyor..."
+          TEXT="1907de Kadikoy sahilinde dogan bu asil sevda Milli Mucadelede bagimsizlik mesalesine donustu Lefterden Can Bartuya Kadikoy Mabedinde yazilan sanli tarih Sonsuza dek Fenerbahce"
+          curl -s -G "https://translate.google.com/translate_tts" \
+            --data-urlencode "ie=UTF-8" \
+            --data-urlencode "client=tw-ob" \
+            --data-urlencode "tl=tr" \
+            --data-urlencode "q=$TEXT" \
+            -H "User-Agent: Mozilla/5.0" -o public/ses.mp3 || true
+
+          echo "Montaj yapiliyor..."
+          ffmpeg -y -i public/v1.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" -c:v libx264 -pix_fmt yuv420p -an public/p1.mp4
+          ffmpeg -y -i public/v2.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" -c:v libx264 -pix_fmt yuv420p -an public/p2.mp4
+          ffmpeg -y -i public/v3.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" -c:v libx264 -pix_fmt yuv420p -an public/p3.mp4
+          ffmpeg -y -i public/v4.mp4 -t 5 -vf "scale=1920:1080:force_original_aspect_ratio=increase,crop=1920:1080" -c:v libx264 -pix_fmt yuv420p -an public/p4.mp4
+
+          echo "file 'p1.mp4'" > public/list.txt
+          echo "file 'p2.mp4'" >> public/list.txt
+          echo "file 'p3.mp4'" >> public/list.txt
+          echo "file 'p4.mp4'" >> public/list.txt
+
+          cd public
+          ffmpeg -y -f concat -safe 0 -i list.txt -i ses.mp3 -c:v copy -c:a aac -shortest ../out/fenerbahce_video.mp4
+
+      - name: Videoyu Yukle
+        uses: actions/upload-artifact@v4
+        with:
+          name: fenerbahce-video
+          path: out/fenerbahce_video.mp4
